@@ -15,6 +15,23 @@ pub const Platform = struct {
         self.display = null;
     }
 
+    pub fn setAsToolWindow(self: *Platform) void {
+        const display = self.getXDisplay();
+        if (display == null) {
+            return;
+        }
+        const window: c_ulong = @intFromPtr(self.iterateWindows("raylib-zig [core] example - basic window"));
+        const pid = getWindowProcId(display.?, window);
+
+        // Stupid hacky way to do this because raylib doesnt allow us to get the actual x11 handle
+        if (std.os.linux.getpid() == pid) {
+            std.debug.print("Found ourself!\n", .{});
+
+            property(display.?, window, "_NET_WM_STATE", "_NET_WM_STATE_SKIP_TASKBAR", 1);
+            property(display.?, window, "_NET_WM_STATE", "_NET_WM_STATE_SKIP_PAGER", 1);
+        }
+    }
+
     fn getXDisplay(self: *Platform) ?*c.Display {
         if (self.display == null) {
             self.display = c.XOpenDisplay(null);
@@ -51,10 +68,9 @@ pub const Platform = struct {
 
     pub fn iterateWindows(self: *Platform, windowName: []const u8) *anyopaque {
         const display = self.getXDisplay();
-        const atom_pid = c.XInternAtom(display, "_NET_WM_PID", 1);
 
         const root = c.XDefaultRootWindow(display);
-        return @ptrFromInt(iterateChildren(@ptrCast(display), root, atom_pid, windowName));
+        return @ptrFromInt(iterateChildren(@ptrCast(display), root, windowName));
     }
 
     pub fn getWindowPosition(self: *Platform, window: *anyopaque) rl.Vector2 {
@@ -74,7 +90,6 @@ pub const Platform = struct {
     fn iterateChildren(
         display: *c.struct__XDisplay,
         window: c.Window,
-        atom: c_ulong,
         window_name: []const u8,
     ) c.Window {
         var name: [*c]u8 = null;
@@ -91,21 +106,13 @@ pub const Platform = struct {
         _ = c.XGetWindowAttributes(display, window, &attr);
 
         if (name_result > 0) {
-            const pid = getWindowProcId(display, window, atom);
+            const pid = getWindowProcId(display, window);
             const as_ptr = std.mem.span(name);
             std.debug.print("Window Found: {s} [{d} / {x}]\n", .{ as_ptr, pid, window });
 
             if (std.mem.eql(u8, as_ptr, window_name)) {
                 std.debug.print("FOUND MATCH!\n", .{});
                 return window;
-            }
-
-            // Stupid hacky way to do this because raylib doesnt allow us to get the actual x11 handle
-            if (std.os.linux.getpid() == pid) {
-                std.debug.print("Found ourself!\n", .{});
-
-                property(display, window, "_NET_WM_STATE", "_NET_WM_STATE_SKIP_TASKBAR", 1);
-                property(display, window, "_NET_WM_STATE", "_NET_WM_STATE_SKIP_PAGER", 1);
             }
         }
 
@@ -118,7 +125,7 @@ pub const Platform = struct {
 
         for (0..num_children) |i| {
             const child = children[i];
-            const found = iterateChildren(display, child, atom, window_name);
+            const found = iterateChildren(display, child, window_name);
             if (found != 0) {
                 return found;
             }
@@ -130,15 +137,15 @@ pub const Platform = struct {
     fn getWindowProcId(
         display: *c.struct__XDisplay,
         window: c.Window,
-        atom: c_ulong,
     ) c_ulong {
+        const atom_pid = c.XInternAtom(display, "_NET_WM_PID", 1);
         var prop_type: c.Atom = std.mem.zeroes(c.Atom);
         var format: c_int = 0;
         var num_items: c_ulong = 0;
         var bytes_after: c_ulong = 0;
         var prop_pid: [*c]u8 = null;
 
-        const result = c.XGetWindowProperty(display, window, atom, 0, 1, 0, c.XA_CARDINAL, &prop_type, &format, &num_items, &bytes_after, &prop_pid);
+        const result = c.XGetWindowProperty(display, window, atom_pid, 0, 1, 0, c.XA_CARDINAL, &prop_type, &format, &num_items, &bytes_after, &prop_pid);
         if (result != c.Success) {
             return 0;
         }

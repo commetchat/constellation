@@ -22,9 +22,11 @@ pub fn main() anyerror!void {
 
     rl.initWindow(width, height, "raylib-zig [core] example - basic window");
 
+    p.setAsToolWindow();
+
     defer rl.closeWindow();
 
-    rl.setTargetFPS(144);
+    rl.setTargetFPS(60);
     std.debug.print("Got window handle: {x}\n", .{rl.getWindowHandle()});
 
     var current_pos: rl.Vector2 = p.getMousePosition();
