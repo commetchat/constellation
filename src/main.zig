@@ -24,12 +24,10 @@ pub fn main() anyerror!void {
 
     defer rl.closeWindow();
 
-    rl.setTargetFPS(60);
+    rl.setTargetFPS(144);
     std.debug.print("Got window handle: {x}\n", .{rl.getWindowHandle()});
 
-    var x: i32 = 0;
-
-    var currentPos: rl.Vector2 = p.getMousePosition();
+    var current_pos: rl.Vector2 = p.getMousePosition();
 
     const window = p.iterateWindows("*Untitled Document 1 - gedit");
 
@@ -38,17 +36,17 @@ pub fn main() anyerror!void {
         rl.beginDrawing();
         defer rl.endDrawing();
 
-        const windowPos = p.getWindowPosition(window);
-        const windowSize = p.getWindowSize(window);
+        const other_window_pos = p.getWindowPosition(window);
+        const other_window_size = p.getWindowSize(window);
 
         const mouse = p.getMousePosition();
+        const window_relative_mouse_pos = mouse.subtract(other_window_pos);
+        current_pos = current_pos.lerp(window_relative_mouse_pos, 10 * rl.getFrameTime());
 
-        const windowPosition = rl.getWindowPosition();
-        const windowSpaceMousePosition = mouse.subtract(windowPosition);
+        const window_pos = rl.getWindowPosition();
+        const local_space_mouse_pos = current_pos.subtract(window_pos).add(other_window_pos);
 
-        const windowSpaceOtherWindowPosition = windowPos.subtract(windowPosition);
-
-        currentPos = currentPos.lerp(windowSpaceMousePosition, 10 * rl.getFrameTime());
+        const local_space_window_pos = other_window_pos.subtract(window_pos);
 
         rl.clearBackground(rl.Color{
             .a = 0,
@@ -57,18 +55,16 @@ pub fn main() anyerror!void {
             .b = 0,
         });
 
-        x = @rem(x + 1, 1000);
-
         rl.drawRectangle(
-            @intFromFloat(windowSpaceOtherWindowPosition.x),
-            @intFromFloat(windowSpaceOtherWindowPosition.y),
-            @intFromFloat(windowSize.x),
-            @intFromFloat(windowSize.y),
+            @intFromFloat(local_space_window_pos.x),
+            @intFromFloat(local_space_window_pos.y),
+            @intFromFloat(other_window_size.x),
+            @intFromFloat(other_window_size.y),
             .{ .r = 255, .g = 0, .b = 0, .a = 30 },
         );
 
         rl.drawRectangleGradientEx(
-            .{ .height = 100, .width = 100, .x = currentPos.x, .y = currentPos.y + 20 },
+            .{ .height = 100, .width = 100, .x = local_space_mouse_pos.x, .y = local_space_mouse_pos.y + 50 },
             .{
                 .r = 255,
                 .g = 0,
@@ -95,12 +91,33 @@ pub fn main() anyerror!void {
             },
         );
 
+        const alloc = std.heap.page_allocator;
+        const txt = try std.fmt.allocPrintZ(alloc, "X: {d}, Y: {d}\x00", .{
+            mouse.x,
+            mouse.y,
+        });
+        defer alloc.free(txt);
+
+        const window_txt = try std.fmt.allocPrintZ(alloc, "X: {d}, Y: {d}\x00", .{
+            other_window_pos.x,
+            other_window_pos.y,
+        });
+        defer alloc.free(window_txt);
+
         rl.drawText(
-            "Congrats! You created your first window!",
-            @intFromFloat(currentPos.x),
-            @intFromFloat(currentPos.y),
+            txt,
+            @intFromFloat(local_space_mouse_pos.x),
+            @intFromFloat(local_space_mouse_pos.y),
             20,
-            rl.Color.light_gray,
+            rl.Color.black,
+        );
+
+        rl.drawText(
+            window_txt,
+            @intFromFloat(local_space_mouse_pos.x),
+            @intFromFloat(local_space_mouse_pos.y + 20),
+            20,
+            rl.Color.black,
         );
     }
 }
