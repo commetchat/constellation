@@ -51,10 +51,10 @@ pub const Platform = struct {
 
     pub fn iterateWindows(self: *Platform, windowName: []const u8) *anyopaque {
         const display = self.getXDisplay();
-        const atomPID = c.XInternAtom(display, "_NET_WM_PID", 1);
+        const atom_pid = c.XInternAtom(display, "_NET_WM_PID", 1);
 
         const root = c.XDefaultRootWindow(display);
-        return @ptrFromInt(iterateChildren(@ptrCast(display), root, atomPID, windowName));
+        return @ptrFromInt(iterateChildren(@ptrCast(display), root, atom_pid, windowName));
     }
 
     pub fn getWindowPosition(self: *Platform, window: *anyopaque) rl.Vector2 {
@@ -75,7 +75,7 @@ pub const Platform = struct {
         display: *c.struct__XDisplay,
         window: c.Window,
         atom: c_ulong,
-        windowName: []const u8,
+        window_name: []const u8,
     ) c.Window {
         var name: [*c]u8 = null;
         var children: [*c]c_ulong = null;
@@ -83,19 +83,19 @@ pub const Platform = struct {
         var root: c.Window = std.mem.zeroes(c.Window);
         var attr: c.XWindowAttributes = std.mem.zeroes(c.XWindowAttributes);
 
-        var childCount: c_uint = 0;
+        var num_children: c_uint = 0;
 
-        const numBytes = c.XFetchName(display, window, &name);
+        const name_result = c.XFetchName(display, window, &name);
         defer _ = c.XFree(@ptrCast(name));
 
         _ = c.XGetWindowAttributes(display, window, &attr);
 
-        if (numBytes > 0) {
+        if (name_result > 0) {
             const pid = getWindowProcId(display, window, atom);
             const as_ptr = std.mem.span(name);
             std.debug.print("Window Found: {s} [{d} / {x}]\n", .{ as_ptr, pid, window });
 
-            if (std.mem.eql(u8, as_ptr, windowName)) {
+            if (std.mem.eql(u8, as_ptr, window_name)) {
                 std.debug.print("FOUND MATCH!\n", .{});
                 return window;
             }
@@ -109,16 +109,16 @@ pub const Platform = struct {
             }
         }
 
-        const result = c.XQueryTree(display, window, &root, &parent, &children, &childCount);
+        const result = c.XQueryTree(display, window, &root, &parent, &children, &num_children);
         defer _ = c.XFree(@ptrCast(children));
 
         if (result == 0) {
             return 0;
         }
 
-        for (0..childCount) |i| {
+        for (0..num_children) |i| {
             const child = children[i];
-            const found = iterateChildren(display, child, atom, windowName);
+            const found = iterateChildren(display, child, atom, window_name);
             if (found != 0) {
                 return found;
             }
@@ -132,34 +132,34 @@ pub const Platform = struct {
         window: c.Window,
         atom: c_ulong,
     ) c_ulong {
-        var propertyType: c.Atom = std.mem.zeroes(c.Atom);
+        var prop_type: c.Atom = std.mem.zeroes(c.Atom);
         var format: c_int = 0;
-        var nItems: c_ulong = 0;
-        var bytesAfter: c_ulong = 0;
-        var propPid: [*c]u8 = null;
+        var num_items: c_ulong = 0;
+        var bytes_after: c_ulong = 0;
+        var prop_pid: [*c]u8 = null;
 
-        const result = c.XGetWindowProperty(display, window, atom, 0, 1, 0, c.XA_CARDINAL, &propertyType, &format, &nItems, &bytesAfter, &propPid);
+        const result = c.XGetWindowProperty(display, window, atom, 0, 1, 0, c.XA_CARDINAL, &prop_type, &format, &num_items, &bytes_after, &prop_pid);
         if (result != c.Success) {
             return 0;
         }
 
-        if (propPid == null) {
+        if (prop_pid == null) {
             return 0;
         }
 
-        const propPtr: *c_ulong = @alignCast(@ptrCast(propPid));
-        return propPtr.*;
+        const prop_ptr: *c_ulong = @alignCast(@ptrCast(prop_pid));
+        return prop_ptr.*;
     }
 
     fn property(
         display: *c.struct__XDisplay,
         window: c.Window,
-        atomType: [*c]const u8,
-        atomProperty: [*c]const u8,
+        atom_type: [*c]const u8,
+        atom_property: [*c]const u8,
         set: c_long,
     ) void {
-        const t = c.XInternAtom(display, atomType, 1);
-        const p = c.XInternAtom(display, atomProperty, 1);
+        const t = c.XInternAtom(display, atom_type, 1);
+        const p = c.XInternAtom(display, atom_property, 1);
         if (t == c.None) {
             std.debug.print("no such atom\n", .{});
         }
@@ -180,9 +180,9 @@ pub const Platform = struct {
         event.data.l[3] = 0;
         event.data.l[4] = 0;
 
-        const sendEvent: [*c]c.union__XEvent = @ptrCast(&event);
+        const send_event: [*c]c.union__XEvent = @ptrCast(&event);
 
-        const result = c.XSendEvent(display, window, c.True, c.SubstructureRedirectMask | c.SubstructureNotifyMask, sendEvent);
+        const result = c.XSendEvent(display, window, c.True, c.SubstructureRedirectMask | c.SubstructureNotifyMask, send_event);
         std.debug.print("Send message result: {d}\n", .{result});
     }
 };
