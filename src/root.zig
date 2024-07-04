@@ -1,10 +1,15 @@
 const std = @import("std");
 const testing = std.testing;
+const main = @import("./main.zig");
 
-export fn add(a: i32, b: i32) i32 {
-    return a + b;
+export fn _constellation_main() i32 {
+    main.main() catch |err| {
+        std.debug.print("An error occurred! {any}", .{err});
+    };
+
+    return 0;
 }
 
-test "basic add functionality" {
-    try testing.expect(add(3, 7) == 10);
+export fn _constellation_add(a: i32, b: i32) i32 {
+    return a + b;
 }
