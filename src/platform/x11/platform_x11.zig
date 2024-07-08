@@ -101,6 +101,22 @@ pub const Platform = struct {
 
             window.property("_NET_WM_STATE", "_NET_WM_STATE_SKIP_TASKBAR", 1);
             window.property("_NET_WM_STATE", "_NET_WM_STATE_SKIP_PAGER", 1);
+
+            const display = self.getXDisplay() orelse return;
+
+            const windowTypeAtom = c.XInternAtom(display, "_NET_WM_WINDOW_TYPE", 1);
+            var windowAtom = c.XInternAtom(display, "_NET_WM_WINDOW_TYPE_TOOLBAR", 1);
+
+            _ = c.XChangeProperty(
+                display,
+                window.windowHandle,
+                windowTypeAtom,
+                c.XA_ATOM,
+                32,
+                c.PropModeReplace,
+                @ptrCast(&windowAtom),
+                1,
+            );
         }
     }
 
