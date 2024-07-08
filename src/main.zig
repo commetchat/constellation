@@ -1,6 +1,7 @@
 const rl = @import("raylib");
 const std = @import("std");
 const platform = @import("platform/platform.zig").platform;
+const assets = @import("./assets/assets.zig");
 
 const globals = @import("state/globals.zig");
 
@@ -21,8 +22,9 @@ pub fn main() anyerror!void {
 
     const width = rl.getScreenHeight();
     const height = rl.getScreenHeight();
-
     rl.initWindow(width, height, globals.windowName);
+
+    assets.load();
 
     p.setAsToolWindow();
 
