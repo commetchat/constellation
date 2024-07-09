@@ -1,0 +1,24 @@
+
+name: build
+
+on:
+  push:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{matrix.os}}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: goto-bus-stop/setup-zig@v2
+        with:
+            version: 0.13.0
+      - run: zig build
+      - name: Upload Artifact
+        if: ${{matrix.os == 'ubuntu-latest'}}
+        uses: actions/upload-artifact@v3
+        with:
+          name: libconstellation.so
+          path: zig-out/lib/libconstellation.so
