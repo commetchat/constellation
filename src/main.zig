@@ -1,42 +1,23 @@
-const rl = @import("raylib");
 const std = @import("std");
-const platform = @import("platform/platform.zig").platform;
-const assets = @import("./assets/assets.zig");
-
+const loop = @import("loop.zig");
 const globals = @import("state/globals.zig");
+const RndGen = std.rand.DefaultPrng;
 
 pub fn main() anyerror!void {
-    var p = std.mem.zeroes(platform.Platform);
-    p.init();
+    _ = try std.Thread.spawn(.{}, loop.loop, .{});
 
-    rl.setConfigFlags(rl.ConfigFlags{
-        .window_transparent = true,
-        .window_mouse_passthrough = true,
-        .window_undecorated = true,
-        .window_topmost = true,
-        .borderless_windowed_mode = true,
-        .window_maximized = false,
-        .window_always_run = true,
-        .window_unfocused = true,
-    });
+    var rnd = RndGen.init(0);
+    while (true) {
+        const x = rnd.random().float(f32) * 1920;
+        const y = rnd.random().float(f32) * 1080;
 
-    const width = rl.getScreenHeight();
-    const height = rl.getScreenHeight();
-    rl.initWindow(width, height, globals.windowName);
+        globals.state.mutex.lock();
+        globals.state.entity.targetPos = .{
+            .x = x,
+            .y = y,
+        };
+        globals.state.mutex.unlock();
 
-    assets.load();
-
-    p.setAsToolWindow();
-
-    defer rl.closeWindow();
-
-    rl.setTargetFPS(60);
-    std.debug.print("Got window handle: {x}\n", .{rl.getWindowHandle()});
-
-    globals.state.currentWindow = p.findWindowByName("*Untitled Document 1 - gedit");
-
-    while (!rl.windowShouldClose()) {
-        globals.state.process(rl.getFrameTime());
-        globals.state.render(&p);
+        std.time.sleep(2_000_000_000);
     }
 }
