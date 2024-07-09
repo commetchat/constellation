@@ -17,7 +17,7 @@ jobs:
         if: ${{matrix.os == 'ubuntu-latest'}}
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y libx11-dev libxfixes-dev libxcursor-dev libglfw3 libglfw3-dev 
+          sudo apt-get install -y libx11-dev libxfixes-dev libxcursor-dev libglfw3 libglfw3-dev libxrandr-dev libxinerama-dev libxi-dev libxext-dev libxfixes-dev libwayland-dev libxkbcommon-dev
       - uses: goto-bus-stop/setup-zig@v2
         with:
             version: 0.13.0
