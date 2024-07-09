@@ -30,7 +30,7 @@ pub fn loop() anyerror!void {
 
     defer rl.closeWindow();
 
-    rl.setTargetFPS(60);
+    rl.setTargetFPS(120);
     std.debug.print("Got window handle: {x}\n", .{rl.getWindowHandle()});
 
     globals.state.mutex.lock();

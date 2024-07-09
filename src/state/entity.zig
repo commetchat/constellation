@@ -5,6 +5,6 @@ pub const Entity = struct {
     targetPos: rl.Vector2,
 
     pub fn process(self: *Entity, delta: f32) void {
-        self.pos = self.pos.lerp(self.targetPos, 10 * delta);
+        self.pos = self.pos.lerp(self.targetPos, 20 * delta);
     }
 };

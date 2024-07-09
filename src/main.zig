@@ -8,8 +8,8 @@ pub fn main() anyerror!void {
 
     var rnd = RndGen.init(0);
     while (true) {
-        const x = rnd.random().float(f32) * 1920;
-        const y = rnd.random().float(f32) * 1080;
+        const x = rnd.random().float(f32);
+        const y = rnd.random().float(f32);
 
         globals.state.mutex.lock();
         globals.state.entity.targetPos = .{
