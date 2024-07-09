@@ -6,6 +6,7 @@ const Entity = @import("entity.zig").Entity;
 pub const State = struct {
     mutex: std.Thread.Mutex,
     currentWindow: ?p.Window,
+    platform: ?p.Platform,
     entity: Entity,
 
     pub fn process(self: *State, delta: f32) void {
@@ -27,6 +28,11 @@ pub const State = struct {
             const target_window_pos = win.getPosition();
             const size = win.getSize();
 
+            std.debug.print("Target window pos: {d}, {d}\n", .{
+                target_window_pos.x,
+                target_window_pos.y,
+            });
+
             const relative_window_pos = target_window_pos.subtract(this_window_pos);
 
             // rl.setWindowPosition(@intFromFloat(pos.x), @intFromFloat(pos.y));
@@ -44,12 +50,15 @@ pub const State = struct {
                 );
             }
 
-            rl.drawRectangle(
-                @intFromFloat(relative_window_pos.x),
-                @intFromFloat(relative_window_pos.y),
-                @intFromFloat(size.x),
-                @intFromFloat(size.y),
-                .{ .a = 50, .r = 255, .g = 0, .b = 0 },
+            rl.drawRectangleLinesEx(
+                .{
+                    .x = relative_window_pos.x,
+                    .y = relative_window_pos.y,
+                    .width = size.x,
+                    .height = size.y,
+                },
+                2,
+                .{ .a = 255, .r = 255, .g = 0, .b = 255 },
             );
         }
 

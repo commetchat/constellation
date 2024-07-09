@@ -14,10 +14,19 @@ pub const Window = struct {
     platform: *Platform,
 
     pub fn getPosition(self: Window) rl.Vector2 {
-        var attr = std.mem.zeroes(c.XWindowAttributes);
-        _ = c.XGetWindowAttributes(self.platform.getXDisplay(), self.windowHandle, &attr);
+        const display = self.platform.getXDisplay() orelse return rl.Vector2{ .x = 0, .y = 0 };
 
-        return rl.Vector2{ .x = @floatFromInt(attr.x), .y = @floatFromInt(attr.y) };
+        const root = c.XRootWindow(display, 0);
+        var x: i32 = 0;
+        var y: i32 = 0;
+        var child: c.Window = 0;
+
+        _ = c.XTranslateCoordinates(display, self.windowHandle, root, 0, 0, &x, &y, &child);
+
+        return rl.Vector2{
+            .x = @floatFromInt(x),
+            .y = @floatFromInt(y),
+        };
     }
 
     pub fn getSize(self: Window) rl.Vector2 {
@@ -163,6 +172,10 @@ pub const Platform = struct {
         const win = Window{ .windowHandle = root, .platform = self };
 
         return iterateChildren(@ptrCast(display), win, windowName);
+    }
+
+    pub fn getWindowById(self: *Platform, id: c_ulong) ?Window {
+        return Window{ .windowHandle = id, .platform = self };
     }
 
     fn iterateChildren(

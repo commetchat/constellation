@@ -3,6 +3,7 @@ const loop = @import("loop.zig");
 const globals = @import("state/globals.zig");
 const RndGen = std.rand.DefaultPrng;
 
+const assets = @import("./assets/assets.zig");
 pub fn main() anyerror!void {
     _ = try std.Thread.spawn(.{}, loop.loop, .{});
 
@@ -12,6 +13,7 @@ pub fn main() anyerror!void {
         const y = rnd.random().float(f32);
 
         globals.state.mutex.lock();
+
         globals.state.entity.targetPos = .{
             .x = x,
             .y = y,

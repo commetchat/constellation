@@ -6,6 +6,7 @@ const assets = @import("./assets/assets.zig");
 const globals = @import("state/globals.zig");
 
 pub fn loop() anyerror!void {
+    std.debug.print("Initializing main loop\n", .{});
     var p = std.mem.zeroes(platform.Platform);
     p.init();
 
@@ -20,21 +21,28 @@ pub fn loop() anyerror!void {
         .window_unfocused = true,
     });
 
+    std.debug.print("Set config flags\n", .{});
+
     const width = rl.getScreenHeight();
     const height = rl.getScreenHeight();
     rl.initWindow(width, height, globals.windowName);
+    defer rl.closeWindow();
+
+    std.debug.print("Init window\n", .{});
 
     assets.load();
 
+    std.debug.print("Loaded assets\n", .{});
+
     p.setAsToolWindow();
 
-    defer rl.closeWindow();
+    std.debug.print("Set as tool window\n", .{});
 
     rl.setTargetFPS(120);
     std.debug.print("Got window handle: {x}\n", .{rl.getWindowHandle()});
 
     globals.state.mutex.lock();
-    globals.state.currentWindow = p.findWindowByName("*Untitled Document 1 - gedit");
+    globals.state.platform = p;
     globals.state.mutex.unlock();
 
     while (!rl.windowShouldClose()) {

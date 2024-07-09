@@ -3,6 +3,7 @@ const State = @import("state.zig").State;
 pub var state: State = .{
     .mutex = .{},
     .currentWindow = null,
+    .platform = null,
     .entity = .{
         .pos = .{ .x = 0, .y = 0 },
         .targetPos = .{ .x = 0, .y = 0 },
