@@ -96,28 +96,30 @@ pub const Platform = struct {
         const pid = window.getProcId();
 
         // Stupid hacky way to do this because raylib doesnt allow us to get the actual x11 handle
-        if (std.os.linux.getpid() == pid) {
-            std.debug.print("Found ourself!\n", .{});
-
-            window.property("_NET_WM_STATE", "_NET_WM_STATE_SKIP_TASKBAR", 1);
-            window.property("_NET_WM_STATE", "_NET_WM_STATE_SKIP_PAGER", 1);
-
-            const display = self.getXDisplay() orelse return;
-
-            const windowTypeAtom = c.XInternAtom(display, "_NET_WM_WINDOW_TYPE", 1);
-            var windowAtom = c.XInternAtom(display, "_NET_WM_WINDOW_TYPE_TOOLBAR", 1);
-
-            _ = c.XChangeProperty(
-                display,
-                window.windowHandle,
-                windowTypeAtom,
-                c.XA_ATOM,
-                32,
-                c.PropModeReplace,
-                @ptrCast(&windowAtom),
-                1,
-            );
+        if (std.os.linux.getpid() != pid) {
+            return;
         }
+
+        std.debug.print("Found ourself!\n", .{});
+
+        window.property("_NET_WM_STATE", "_NET_WM_STATE_SKIP_TASKBAR", 1);
+        window.property("_NET_WM_STATE", "_NET_WM_STATE_SKIP_PAGER", 1);
+
+        const display = self.getXDisplay() orelse return;
+
+        const windowTypeAtom = c.XInternAtom(display, "_NET_WM_WINDOW_TYPE", 1);
+        var windowAtom = c.XInternAtom(display, "_NET_WM_WINDOW_TYPE_TOOLBAR", 1);
+
+        _ = c.XChangeProperty(
+            display,
+            window.windowHandle,
+            windowTypeAtom,
+            c.XA_ATOM,
+            32,
+            c.PropModeReplace,
+            @ptrCast(&windowAtom),
+            1,
+        );
     }
 
     fn getXDisplay(self: *Platform) ?*c.Display {
