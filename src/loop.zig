@@ -10,6 +10,14 @@ pub fn loop() anyerror!void {
     var p = std.mem.zeroes(platform.Platform);
     p.init();
 
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+
+    globals.state.mutex.lock();
+    globals.state.platform = p;
+    globals.state.cursors.init(allocator);
+    globals.state.mutex.unlock();
+
     rl.setConfigFlags(rl.ConfigFlags{
         .window_transparent = true,
         .window_mouse_passthrough = true,
@@ -40,14 +48,6 @@ pub fn loop() anyerror!void {
 
     rl.setTargetFPS(120);
     std.debug.print("Got window handle: {x}\n", .{rl.getWindowHandle()});
-
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
-
-    globals.state.mutex.lock();
-    globals.state.platform = p;
-    globals.state.cursors.init(allocator);
-    globals.state.mutex.unlock();
 
     while (!rl.windowShouldClose()) {
         rl.beginDrawing();

@@ -160,11 +160,15 @@ pub const Platform = struct {
     }
 
     pub fn setAsToolWindow(self: *Platform) void {
-        const window = self.findWindowByName(globals.windowName) orelse return;
+        const window = self.findWindowByName(globals.windowName) orelse {
+            std.debug.print("Failed to get window for ourself (couldn't find window)\n", .{});
+            return;
+        };
         const pid = window.getProcId();
 
         // Stupid hacky way to do this because raylib doesnt allow us to get the actual x11 handle
         if (std.os.linux.getpid() != pid) {
+            std.debug.print("Failed to get window for ourself\n", .{});
             return;
         }
 
@@ -178,7 +182,7 @@ pub const Platform = struct {
         const display = self.getXDisplay() orelse return;
 
         const windowTypeAtom = c.XInternAtom(display, "_NET_WM_WINDOW_TYPE", 1);
-        var windowAtom = c.XInternAtom(display, "_NET_WM_WINDOW_TYPE_TOOLBAR", 1);
+        var windowAtom = c.XInternAtom(display, "_NET_WM_WINDOW_TYPE_DOCK", 1);
 
         _ = c.XChangeProperty(
             display,

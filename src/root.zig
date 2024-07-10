@@ -24,3 +24,38 @@ export fn _constellation_set_window(id: c_ulong) void {
 
     globals.state.currentWindow = globals.state.platform.?.getWindowById(id);
 }
+
+export fn _constellation_create_cursor(key: [*:0]const u8, display_name: [*:0]const u8) void {
+    globals.state.mutex.lock();
+    defer globals.state.mutex.unlock();
+
+    const key_slice = std.mem.span(key);
+    const display_name_slice = std.mem.span(display_name);
+
+    globals.state.cursors.createCursor(key_slice, display_name_slice) catch {
+        std.debug.print("Failed to create cursor\n", .{});
+    };
+}
+
+export fn _constellation_set_cursor_position(key: [*:0]const u8, x: f32, y: f32) void {
+    globals.state.mutex.lock();
+    defer globals.state.mutex.unlock();
+
+    const key_slice = std.mem.span(key);
+
+    globals.state.cursors.setTargetPos(key_slice, .{ .x = x, .y = y });
+}
+
+export fn _constellation_set_cursor_color(key: [*:0]const u8, r: u8, g: u8, b: u8, a: u8) void {
+    globals.state.mutex.lock();
+    defer globals.state.mutex.unlock();
+
+    const key_slice = std.mem.span(key);
+
+    globals.state.cursors.setColor(key_slice, .{
+        .r = r,
+        .g = g,
+        .b = b,
+        .a = a,
+    });
+}
