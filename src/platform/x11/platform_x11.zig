@@ -9,6 +9,14 @@ const c = @cImport({
     @cInclude("X11/Xatom.h");
 });
 
+pub const Desktop = struct {
+    index: c_long,
+
+    pub fn equals(self: Desktop, other: Desktop) bool {
+        return self.index == other.index;
+    }
+};
+
 pub const Window = struct {
     windowHandle: c.Window,
     platform: *Platform,
@@ -37,24 +45,13 @@ pub const Window = struct {
     }
 
     fn getProcId(self: Window) c_ulong {
-        const atom_pid = c.XInternAtom(self.platform.getXDisplay(), "_NET_WM_PID", 1);
-        var prop_type: c.Atom = std.mem.zeroes(c.Atom);
-        var format: c_int = 0;
-        var num_items: c_ulong = 0;
-        var bytes_after: c_ulong = 0;
-        var prop_pid: [*c]u8 = null;
+        const result = self.platform.getCardinalProperty(self.windowHandle, "_NET_WM_PID") orelse return 0;
+        return result;
+    }
 
-        const result = c.XGetWindowProperty(self.platform.getXDisplay(), self.windowHandle, atom_pid, 0, 1, 0, c.XA_CARDINAL, &prop_type, &format, &num_items, &bytes_after, &prop_pid);
-        if (result != c.Success) {
-            return 0;
-        }
-
-        if (prop_pid == null) {
-            return 0;
-        }
-
-        const prop_ptr: *c_ulong = @alignCast(@ptrCast(prop_pid));
-        return prop_ptr.*;
+    pub fn getDesktop(self: Window) ?Desktop {
+        const index = self.platform.getCardinalProperty(self.windowHandle, "_NET_WM_DESKTOP") orelse return null;
+        return Desktop{ .index = @intCast(index) };
     }
 
     fn property(
@@ -95,9 +92,71 @@ pub const Window = struct {
 
 pub const Platform = struct {
     display: ?*c.Display,
+    thisWindow: ?Window,
 
     pub fn init(self: *Platform) void {
         self.display = null;
+        _ = c.XSetErrorHandler(onError);
+    }
+
+    pub fn onError(display: ?*c.Display, err: [*c]c.XErrorEvent) callconv(.C) c_int {
+        _ = display;
+
+        std.debug.print("X Error: {d}\n", .{err.*.error_code});
+
+        return 0;
+    }
+
+    fn getCardinalProperty(self: *Platform, window: c.Window, prop: [*c]const u8) ?c_ulong {
+        const display = self.getXDisplay();
+
+        const atom_pid = c.XInternAtom(display, prop, 1);
+        var prop_type: c.Atom = std.mem.zeroes(c.Atom);
+        var format: c_int = 0;
+        var num_items: c_ulong = 0;
+        var bytes_after: c_ulong = 0;
+        var result: [*c]u8 = null;
+
+        const success = c.XGetWindowProperty(
+            display,
+            window,
+            atom_pid,
+            0,
+            1,
+            0,
+            c.XA_CARDINAL,
+            &prop_type,
+            &format,
+            &num_items,
+            &bytes_after,
+            &result,
+        );
+
+        if (success != c.Success) {
+            std.debug.print("Get desktop failed!\n", .{});
+            return null;
+        }
+
+        if (result == null) {
+            std.debug.print("Result was null! failed!\n", .{});
+            return null;
+        }
+
+        const prop_ptr: *c_ulong = @alignCast(@ptrCast(result));
+        const returnVal = prop_ptr.*;
+
+        _ = c.XFree(result);
+
+        return returnVal;
+    }
+
+    pub fn getCurrentDesktop(self: *Platform) ?Desktop {
+        const display = self.getXDisplay();
+        const root = c.XDefaultRootWindow(display);
+
+        const desktop = self.getCardinalProperty(root, "_NET_CURRENT_DESKTOP") orelse return null;
+
+        return .{ .index = @intCast(desktop) };
     }
 
     pub fn setAsToolWindow(self: *Platform) void {
@@ -110,6 +169,8 @@ pub const Platform = struct {
         }
 
         std.debug.print("Found ourself!\n", .{});
+
+        self.thisWindow = window;
 
         window.property("_NET_WM_STATE", "_NET_WM_STATE_SKIP_TASKBAR", 1);
         window.property("_NET_WM_STATE", "_NET_WM_STATE_SKIP_PAGER", 1);
@@ -129,6 +190,26 @@ pub const Platform = struct {
             @ptrCast(&windowAtom),
             1,
         );
+    }
+
+    pub fn moveWindowToDesktop(self: *Platform, window: Window, desktop: Desktop) void {
+        const display = self.getXDisplay();
+        var event = std.mem.zeroes(c.XClientMessageEvent);
+        const t = c.XInternAtom(display, "_NET_WM_DESKTOP", 1);
+        event.type = c.ClientMessage;
+        event.window = window.windowHandle;
+        event.message_type = t;
+        event.send_event = c.True;
+        event.format = 32;
+        event.data.l[0] = desktop.index;
+        event.data.l[1] = 0;
+        event.data.l[2] = 0;
+        event.data.l[3] = 0;
+        event.data.l[4] = 0;
+
+        const send_event: [*c]c.union__XEvent = @ptrCast(&event);
+
+        _ = c.XSendEvent(display, window.windowHandle, c.True, c.SubstructureRedirectMask | c.SubstructureNotifyMask, send_event);
     }
 
     fn getXDisplay(self: *Platform) ?*c.Display {
@@ -197,12 +278,9 @@ pub const Platform = struct {
         _ = c.XGetWindowAttributes(display, window.windowHandle, &attr);
 
         if (name_result > 0) {
-            const pid = window.getProcId();
             const as_ptr = std.mem.span(name);
-            std.debug.print("Window Found: {s} [{d} / {x}]\n", .{ as_ptr, pid, window.windowHandle });
 
             if (std.mem.eql(u8, as_ptr, window_name)) {
-                std.debug.print("FOUND MATCH!\n", .{});
                 return window;
             }
         }

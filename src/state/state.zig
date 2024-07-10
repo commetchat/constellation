@@ -11,6 +11,15 @@ pub const State = struct {
 
     pub fn process(self: *State, delta: f32) void {
         self.entity.process(delta);
+
+        const desktop = self.platform.?.getCurrentDesktop();
+
+        if (desktop != null and self.platform.?.thisWindow != null) {
+            var overlayDesktop = self.platform.?.thisWindow.?.getDesktop();
+            if (overlayDesktop != null and !overlayDesktop.?.equals(desktop.?)) {
+                self.platform.?.moveWindowToDesktop(self.platform.?.thisWindow.?, desktop.?);
+            }
+        }
     }
 
     pub fn render(self: *State, platform: *p.Platform) void {
@@ -25,30 +34,14 @@ pub const State = struct {
 
         if (self.currentWindow != null) {
             const win = self.currentWindow.?;
+            const desktop = win.getDesktop();
+            const currentDesktop = self.platform.?.getCurrentDesktop();
             const target_window_pos = win.getPosition();
             const size = win.getSize();
 
-            std.debug.print("Target window pos: {d}, {d}\n", .{
-                target_window_pos.x,
-                target_window_pos.y,
-            });
-
             const relative_window_pos = target_window_pos.subtract(this_window_pos);
 
-            // rl.setWindowPosition(@intFromFloat(pos.x), @intFromFloat(pos.y));
-            // rl.setWindowSize(@intFromFloat(size.x), @intFromFloat(size.y));
-
             const mouse_pos = relative_window_pos.add(self.entity.pos.multiply(size));
-
-            if (assets.cursorTexture != null) {
-                rl.drawTextureEx(
-                    assets.cursorTexture.?,
-                    mouse_pos,
-                    0,
-                    0.5,
-                    .{ .a = 255, .b = 255, .g = 150, .r = 150 },
-                );
-            }
 
             rl.drawRectangleLinesEx(
                 .{
@@ -60,6 +53,18 @@ pub const State = struct {
                 2,
                 .{ .a = 255, .r = 255, .g = 0, .b = 255 },
             );
+
+            if (desktop != null and currentDesktop != null and desktop.?.equals(currentDesktop.?)) {
+                if (assets.cursorTexture != null) {
+                    rl.drawTextureEx(
+                        assets.cursorTexture.?,
+                        mouse_pos,
+                        0,
+                        0.5,
+                        .{ .a = 255, .b = 255, .g = 150, .r = 150 },
+                    );
+                }
+            }
         }
 
         var mousePos = platform.getMousePosition();

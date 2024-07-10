@@ -14,12 +14,16 @@ pub fn main() anyerror!void {
 
         globals.state.mutex.lock();
 
+        if (globals.state.platform != null) {
+            globals.state.currentWindow = globals.state.platform.?.findWindowByName("*Untitled Document 1 - gedit");
+        }
+
         globals.state.entity.targetPos = .{
             .x = x,
             .y = y,
         };
         globals.state.mutex.unlock();
 
-        std.time.sleep(2_000_000_000);
+        std.time.sleep(2_000_000_00);
     }
 }
