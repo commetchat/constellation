@@ -3,15 +3,14 @@ const p = @import("../platform/platform.zig").platform;
 const assets = @import("../assets/assets.zig");
 const std = @import("std");
 const Entity = @import("entity.zig").Entity;
+const CursorManager = @import("cursor.zig").CursorManager;
 pub const State = struct {
     mutex: std.Thread.Mutex,
     currentWindow: ?p.Window,
     platform: ?p.Platform,
-    entity: Entity,
+    cursors: CursorManager,
 
     pub fn process(self: *State, delta: f32) void {
-        self.entity.process(delta);
-
         const desktop = self.platform.?.getCurrentDesktop();
 
         if (desktop != null and self.platform.?.thisWindow != null) {
@@ -20,9 +19,15 @@ pub const State = struct {
                 self.platform.?.moveWindowToDesktop(self.platform.?.thisWindow.?, desktop.?);
             }
         }
+
+        const keys = self.cursors.getKeys() orelse return;
+        for (keys) |key| {
+            var ptr = self.cursors.getPtr(key) orelse continue;
+            ptr.process(delta);
+        }
     }
 
-    pub fn render(self: *State, platform: *p.Platform) void {
+    pub fn render(self: *State) void {
         const this_window_pos = rl.getWindowPosition();
 
         rl.clearBackground(rl.Color{
@@ -41,33 +46,51 @@ pub const State = struct {
 
             const relative_window_pos = target_window_pos.subtract(this_window_pos);
 
-            const mouse_pos = relative_window_pos.add(self.entity.pos.multiply(size));
-
-            rl.drawRectangleLinesEx(
-                .{
-                    .x = relative_window_pos.x,
-                    .y = relative_window_pos.y,
-                    .width = size.x,
-                    .height = size.y,
-                },
-                2,
-                .{ .a = 255, .r = 255, .g = 0, .b = 255 },
-            );
-
             if (desktop != null and currentDesktop != null and desktop.?.equals(currentDesktop.?)) {
-                if (assets.cursorTexture != null) {
-                    rl.drawTextureEx(
-                        assets.cursorTexture.?,
-                        mouse_pos,
-                        0,
-                        0.5,
-                        .{ .a = 255, .b = 255, .g = 150, .r = 150 },
-                    );
-                }
+                renderWindowOutline(relative_window_pos, size);
+                self.renderCursors(relative_window_pos, size);
             }
         }
 
-        var mousePos = platform.getMousePosition();
+        var mousePos = self.platform.?.getMousePosition();
         mousePos = mousePos.subtract(this_window_pos);
+    }
+
+    fn renderWindowOutline(relative_window_pos: rl.Vector2, window_size: rl.Vector2) void {
+        rl.drawRectangleLinesEx(
+            .{
+                .x = relative_window_pos.x,
+                .y = relative_window_pos.y,
+                .width = window_size.x,
+                .height = window_size.y,
+            },
+            2,
+            .{ .a = 255, .r = 255, .g = 0, .b = 255 },
+        );
+    }
+
+    fn renderCursors(self: *State, relative_window_pos: rl.Vector2, window_size: rl.Vector2) void {
+        if (assets.cursorTexture == null) return;
+        const cursors = self.cursors.getValues() orelse return;
+
+        for (cursors) |value| {
+            const mouse_pos = relative_window_pos.add(value.pos.multiply(window_size));
+
+            rl.drawTextureEx(
+                assets.cursorTexture.?,
+                mouse_pos,
+                0,
+                0.5,
+                value.color,
+            );
+
+            rl.drawText(
+                value.displayName,
+                @intFromFloat(mouse_pos.x + 20),
+                @intFromFloat(mouse_pos.y + 20),
+                24,
+                value.color,
+            );
+        }
     }
 };

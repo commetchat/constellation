@@ -41,8 +41,12 @@ pub fn loop() anyerror!void {
     rl.setTargetFPS(120);
     std.debug.print("Got window handle: {x}\n", .{rl.getWindowHandle()});
 
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+
     globals.state.mutex.lock();
     globals.state.platform = p;
+    globals.state.cursors.init(allocator);
     globals.state.mutex.unlock();
 
     while (!rl.windowShouldClose()) {
@@ -50,10 +54,9 @@ pub fn loop() anyerror!void {
         defer rl.endDrawing();
 
         globals.state.mutex.lock();
+        defer globals.state.mutex.unlock();
 
         globals.state.process(rl.getFrameTime());
-        globals.state.render(&p);
-
-        globals.state.mutex.unlock();
+        globals.state.render();
     }
 }

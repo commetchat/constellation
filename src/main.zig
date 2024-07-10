@@ -2,6 +2,7 @@ const std = @import("std");
 const loop = @import("loop.zig");
 const globals = @import("state/globals.zig");
 const RndGen = std.rand.DefaultPrng;
+const Cursor = @import("state/cursor.zig").Cursor;
 
 const assets = @import("./assets/assets.zig");
 pub fn main() anyerror!void {
@@ -18,12 +19,29 @@ pub fn main() anyerror!void {
             globals.state.currentWindow = globals.state.platform.?.findWindowByName("*Untitled Document 1 - gedit");
         }
 
-        globals.state.entity.targetPos = .{
-            .x = x,
-            .y = y,
-        };
+        const key = @mod(rnd.random().int(i32), 5);
+
+        const keyStr = try std.fmt.allocPrintZ(std.heap.page_allocator, "Key_{d}", .{key});
+        defer std.heap.page_allocator.free(keyStr);
+
+        const nameStr = try std.fmt.allocPrintZ(std.heap.page_allocator, "User {d}", .{key});
+        defer std.heap.page_allocator.free(nameStr);
+
+        if (globals.state.cursors.cursorExists(keyStr)) {
+            globals.state.cursors.setTargetPos(keyStr, .{ .x = x, .y = y });
+        } else {
+            try globals.state.cursors.createCursor(keyStr, nameStr);
+            globals.state.cursors.setTargetPos(keyStr, .{ .x = x, .y = y });
+            globals.state.cursors.setColor(keyStr, .{
+                .a = 255,
+                .r = rnd.random().int(u8),
+                .g = rnd.random().int(u8),
+                .b = rnd.random().int(u8),
+            });
+        }
+
         globals.state.mutex.unlock();
 
-        std.time.sleep(2_000_000_00);
+        std.time.sleep(2_00_000_000);
     }
 }

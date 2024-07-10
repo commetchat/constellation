@@ -1,12 +1,14 @@
 const State = @import("state.zig").State;
+const Cursor = @import("cursor.zig").Cursor;
+const std = @import("std");
 
 pub var state: State = .{
     .mutex = .{},
     .currentWindow = null,
     .platform = null,
-    .entity = .{
-        .pos = .{ .x = 0, .y = 0 },
-        .targetPos = .{ .x = 0, .y = 0 },
+    .cursors = .{
+        ._allocator = null,
+        ._cursors = null,
     },
 };
 
