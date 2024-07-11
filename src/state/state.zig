@@ -11,7 +11,13 @@ pub const State = struct {
     cursors: CursorManager,
 
     pub fn process(self: *State, delta: f32) void {
+        if (self.platform == null) return;
+
         const desktop = self.platform.?.getCurrentDesktop();
+
+        if (self.platform.?.thisWindow == null) {
+            std.debug.print("Could not find reference to our own window!\n", .{});
+        }
 
         if (desktop != null and self.platform.?.thisWindow != null) {
             var overlayDesktop = self.platform.?.thisWindow.?.getDesktop();
@@ -25,9 +31,16 @@ pub const State = struct {
             var ptr = self.cursors.getPtr(key) orelse continue;
             ptr.process(delta);
         }
+
+        const bounds = self.platform.?.getBounds(self);
+        if (bounds != null) {
+            rl.setWindowPosition(@intFromFloat(bounds.?.x), @intFromFloat(bounds.?.y));
+            rl.setWindowSize(@intFromFloat(bounds.?.width), @intFromFloat(bounds.?.height));
+        }
     }
 
     pub fn render(self: *State) void {
+        if (self.platform == null) return;
         const this_window_pos = rl.getWindowPosition();
 
         rl.clearBackground(rl.Color{

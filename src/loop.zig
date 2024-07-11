@@ -7,13 +7,13 @@ const globals = @import("state/globals.zig");
 
 pub fn loop() anyerror!void {
     std.debug.print("Initializing main loop\n", .{});
-    var p = std.mem.zeroes(platform.Platform);
-    p.init();
 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
     globals.state.mutex.lock();
+    var p = std.mem.zeroes(platform.Platform);
+    p.init();
     globals.state.platform = p;
     globals.state.cursors.init(allocator);
     globals.state.mutex.unlock();
@@ -42,7 +42,9 @@ pub fn loop() anyerror!void {
 
     std.debug.print("Loaded assets\n", .{});
 
-    p.setAsToolWindow();
+    globals.state.mutex.lock();
+    globals.state.platform.?.setAsToolWindow();
+    globals.state.mutex.unlock();
 
     std.debug.print("Set as tool window\n", .{});
 

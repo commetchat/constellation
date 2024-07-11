@@ -1,6 +1,7 @@
 const rl = @import("raylib");
 const std = @import("std");
 const globals = @import("../../state/globals.zig");
+const State = @import("../../state/state.zig").State;
 
 const c = @cImport({
     @cInclude("X11/X.h");
@@ -10,7 +11,7 @@ const c = @cImport({
 });
 
 pub const Desktop = struct {
-    index: c_long,
+    index: c_ulong,
 
     pub fn equals(self: Desktop, other: Desktop) bool {
         return self.index == other.index;
@@ -107,6 +108,23 @@ pub const Platform = struct {
         return 0;
     }
 
+    pub fn getBounds(self: *Platform, state: *State) ?rl.Rectangle {
+        _ = self;
+        if (state.currentWindow != null) {
+            const pos = state.currentWindow.?.getPosition();
+            const size = state.currentWindow.?.getSize();
+
+            return rl.Rectangle{
+                .x = pos.x,
+                .y = pos.y,
+                .height = size.y,
+                .width = size.x,
+            };
+        }
+
+        return null;
+    }
+
     fn getCardinalProperty(self: *Platform, window: c.Window, prop: [*c]const u8) ?c_ulong {
         const display = self.getXDisplay();
 
@@ -172,9 +190,8 @@ pub const Platform = struct {
             return;
         }
 
-        std.debug.print("Found ourself!\n", .{});
-
         self.thisWindow = window;
+        std.debug.print("Found ourself! {any}\n", .{window});
 
         window.property("_NET_WM_STATE", "_NET_WM_STATE_SKIP_TASKBAR", 1);
         window.property("_NET_WM_STATE", "_NET_WM_STATE_SKIP_PAGER", 1);
@@ -205,7 +222,7 @@ pub const Platform = struct {
         event.message_type = t;
         event.send_event = c.True;
         event.format = 32;
-        event.data.l[0] = desktop.index;
+        event.data.l[0] = @bitCast(desktop.index);
         event.data.l[1] = 0;
         event.data.l[2] = 0;
         event.data.l[3] = 0;
