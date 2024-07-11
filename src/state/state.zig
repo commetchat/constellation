@@ -105,11 +105,11 @@ pub const State = struct {
                 mouse_pos,
                 0,
                 1,
-                value.color,
+                value.color.brightness(0.5),
             );
 
             if (assets.robotoFont != null) {
-                drawTextOutline(
+                drawTextWithBackground(
                     assets.robotoFont.?,
                     value.displayName,
                     mouse_pos.add(.{ .x = 20, .y = 20 }),
@@ -121,41 +121,16 @@ pub const State = struct {
         }
     }
 
-    fn drawTextOutline(font: rl.Font, text: [:0]const u8, position: rl.Vector2, fontSize: f32, spacing: f32, color: rl.Color) void {
-        rl.drawTextEx(
-            font,
-            text,
-            position.add(.{ .x = -1, .y = 0 }),
-            fontSize,
-            spacing,
-            rl.Color.black,
-        );
+    fn drawTextWithBackground(font: rl.Font, text: [:0]const u8, position: rl.Vector2, fontSize: f32, spacing: f32, color: rl.Color) void {
+        const size = rl.measureTextEx(font, text, fontSize, spacing);
+        const borderPadding = 5;
 
-        rl.drawTextEx(
-            font,
-            text,
-            position.add(.{ .x = 1, .y = 0 }),
-            fontSize,
-            spacing,
-            rl.Color.black,
-        );
-
-        rl.drawTextEx(
-            font,
-            text,
-            position.add(.{ .x = 0, .y = 1 }),
-            fontSize,
-            spacing,
-            rl.Color.black,
-        );
-
-        rl.drawTextEx(
-            font,
-            text,
-            position.add(.{ .x = 0, .y = -1 }),
-            fontSize,
-            spacing,
-            rl.Color.black,
+        rl.drawRectangle(
+            @intFromFloat(position.x - borderPadding),
+            @intFromFloat(position.y - borderPadding),
+            @intFromFloat(size.x + borderPadding * 2),
+            @intFromFloat(size.y + borderPadding * 2),
+            rl.Color.black.alpha(0.8),
         );
 
         rl.drawTextEx(
@@ -164,7 +139,7 @@ pub const State = struct {
             position,
             fontSize,
             spacing,
-            color,
+            color.brightness(0.5),
         );
     }
 };
