@@ -7,6 +7,7 @@ const CursorManager = @import("cursor.zig").CursorManager;
 pub const State = struct {
     mutex: std.Thread.Mutex,
     currentWindow: ?p.Window,
+    currentDisplay: ?p.Display,
     platform: ?p.Platform,
     cursors: CursorManager,
 
@@ -62,39 +63,42 @@ pub const State = struct {
 
         if (self.currentWindow != null) {
             const win = self.currentWindow.?;
-            const desktop = win.getDesktop();
-            const currentDesktop = self.platform.?.getCurrentDesktop();
-            const target_window_pos = win.getPosition();
-            const size = win.getSize();
+            const target_window_desktop = win.getDesktop();
+            const current_desktop = self.platform.?.getCurrentDesktop();
 
-            const relative_window_pos = target_window_pos.subtract(this_window_pos);
-
-            if (desktop != null and currentDesktop != null and desktop.?.equals(currentDesktop.?)) {
-                renderWindowOutline(relative_window_pos, size);
-                self.renderCursors(relative_window_pos, size);
-            }
+            if (target_window_desktop == null) return;
+            if (current_desktop == null) return;
+            if (target_window_desktop.?.equals(current_desktop.?) == false) return;
         }
+
+        var bounds = self.platform.?.getTargetBounds(self) orelse return;
+        const pos = rl.Vector2{ .x = bounds.x, .y = bounds.y };
+        const relative_pos = pos.subtract(this_window_pos);
+
+        bounds.x = relative_pos.x;
+        bounds.y = relative_pos.y;
+
+        renderWindowOutline(bounds);
+        self.renderCursors(bounds);
     }
 
-    fn renderWindowOutline(relative_window_pos: rl.Vector2, window_size: rl.Vector2) void {
+    fn renderWindowOutline(rect: rl.Rectangle) void {
         rl.drawRectangleLinesEx(
-            .{
-                .x = relative_window_pos.x,
-                .y = relative_window_pos.y,
-                .width = window_size.x,
-                .height = window_size.y,
-            },
+            rect,
             2,
             .{ .a = 255, .r = 255, .g = 0, .b = 255 },
         );
     }
 
-    fn renderCursors(self: *State, relative_window_pos: rl.Vector2, window_size: rl.Vector2) void {
+    fn renderCursors(self: *State, rect: rl.Rectangle) void {
         if (assets.cursorTexture == null) return;
         const cursors = self.cursors.getValues() orelse return;
 
         for (cursors) |value| {
-            const mouse_pos = relative_window_pos.add(value.pos.multiply(window_size));
+            const pos = rl.Vector2{ .x = rect.x, .y = rect.y };
+            const size = rl.Vector2{ .x = rect.width, .y = rect.height };
+
+            const mouse_pos = pos.add(value.pos.multiply(size));
 
             rl.drawTextureEx(
                 assets.cursorTexture.?,

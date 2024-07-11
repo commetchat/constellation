@@ -5,6 +5,7 @@ const std = @import("std");
 pub var state: State = .{
     .mutex = .{},
     .currentWindow = null,
+    .currentDisplay = null,
     .platform = null,
     .cursors = .{
         ._allocator = null,

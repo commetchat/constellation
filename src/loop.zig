@@ -14,6 +14,7 @@ pub fn loop() anyerror!void {
     globals.state.mutex.lock();
     var p = std.mem.zeroes(platform.Platform);
     p.init();
+
     globals.state.platform = p;
     globals.state.cursors.init(allocator);
     globals.state.mutex.unlock();

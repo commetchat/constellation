@@ -16,7 +16,9 @@ pub fn main() anyerror!void {
         globals.state.mutex.lock();
 
         if (globals.state.platform != null) {
-            globals.state.currentWindow = globals.state.platform.?.findWindowByName("*Untitled Document 1 - gedit");
+            if (globals.state.currentDisplay == null) {
+                globals.state.currentDisplay = globals.state.platform.?.getDisplay("HDMI-1");
+            }
         }
 
         const key = @mod(rnd.random().int(i32), 5);

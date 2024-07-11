@@ -9,7 +9,7 @@ pub const Cursor = struct {
     id: [:0]const u8,
 
     pub fn process(self: *Cursor, delta: f32) void {
-        self.pos = self.pos.lerp(self.targetPos, 20 * delta);
+        self.pos = self.pos.lerp(self.targetPos, 5 * delta);
     }
 };
 

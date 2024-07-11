@@ -8,6 +8,7 @@ const c = @cImport({
     @cInclude("X11/Xlib.h");
     @cInclude("X11/Xutil.h");
     @cInclude("X11/Xatom.h");
+    @cInclude("X11/extensions/Xrandr.h");
 });
 
 pub const Desktop = struct {
@@ -16,6 +17,13 @@ pub const Desktop = struct {
     pub fn equals(self: Desktop, other: Desktop) bool {
         return self.index == other.index;
     }
+};
+
+pub const Display = struct {
+    x: c_int,
+    y: c_int,
+    width: c_ulong,
+    height: c_ulong,
 };
 
 pub const Window = struct {
@@ -108,6 +116,7 @@ pub const Platform = struct {
         return 0;
     }
 
+    // Gets bounds required for overlay window size
     pub fn getBounds(self: *Platform, state: *State) ?rl.Rectangle {
         _ = self;
         if (state.currentWindow != null) {
@@ -119,6 +128,42 @@ pub const Platform = struct {
                 .y = pos.y,
                 .height = size.y,
                 .width = size.x,
+            };
+        }
+
+        if (state.currentDisplay != null) {
+            return rl.Rectangle{
+                .x = @floatFromInt(state.currentDisplay.?.x),
+                .y = @floatFromInt(state.currentDisplay.?.y),
+                .width = @floatFromInt(state.currentDisplay.?.width),
+                .height = @floatFromInt(state.currentDisplay.?.height),
+            };
+        }
+
+        return null;
+    }
+
+    // gets bounds required for the window we want to draw over
+    pub fn getTargetBounds(self: *Platform, state: *State) ?rl.Rectangle {
+        _ = self;
+        if (state.currentWindow != null) {
+            const pos = state.currentWindow.?.getPosition();
+            const size = state.currentWindow.?.getSize();
+
+            return rl.Rectangle{
+                .x = pos.x,
+                .y = pos.y,
+                .width = size.x,
+                .height = size.y,
+            };
+        }
+
+        if (state.currentDisplay != null) {
+            return rl.Rectangle{
+                .x = @floatFromInt(state.currentDisplay.?.x),
+                .y = @floatFromInt(state.currentDisplay.?.y),
+                .width = @floatFromInt(state.currentDisplay.?.width),
+                .height = @floatFromInt(state.currentDisplay.?.height),
             };
         }
 
@@ -175,6 +220,41 @@ pub const Platform = struct {
         const desktop = self.getCardinalProperty(root, "_NET_CURRENT_DESKTOP") orelse return null;
 
         return .{ .index = @intCast(desktop) };
+    }
+
+    pub fn getDisplay(self: *Platform, name: []const u8) ?Display {
+        const display = self.getXDisplay() orelse return null;
+        const root = c.XDefaultRootWindow(display);
+        const resources = c.XRRGetScreenResources(display, root);
+        defer c.XRRFreeScreenResources(resources);
+
+        std.debug.print("Screen count: {d}\n", .{resources.*.noutput});
+
+        const numOutputs = resources.*.noutput;
+        for (0..@intCast(numOutputs)) |output_index| {
+            const info = c.XRRGetOutputInfo(display, resources, resources.*.outputs[output_index]);
+            defer c.XRRFreeOutputInfo(info);
+            if (info == 0) continue;
+            const output_name = std.mem.span(info.*.name);
+
+            if (info.*.connection != c.RR_Connected) continue;
+
+            std.debug.print("Got info: {any} {s}\n", .{ info, output_name });
+
+            if (std.mem.eql(u8, output_name, name) == false) continue;
+
+            const crtc_info = c.XRRGetCrtcInfo(display, resources, info.*.crtc);
+            defer c.XRRFreeCrtcInfo(crtc_info);
+
+            return Display{
+                .x = crtc_info.*.x,
+                .y = crtc_info.*.y,
+                .width = crtc_info.*.width,
+                .height = crtc_info.*.height,
+            };
+        }
+
+        return null;
     }
 
     pub fn setAsToolWindow(self: *Platform) void {

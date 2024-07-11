@@ -37,11 +37,6 @@ pub fn build(b: *std.Build) void {
     lib.root_module.addImport("raylib", raylib);
     lib.root_module.addImport("raygui", raygui);
 
-    // This declares intent for the library to be installed into the standard
-    // location when the user invokes the "install" step (the default step when
-    // running `zig build`).
-    b.installArtifact(lib);
-
     const exe = b.addExecutable(.{
         .name = "constellation",
         .root_source_file = b.path("src/main.zig"),
@@ -53,6 +48,20 @@ pub fn build(b: *std.Build) void {
     exe.root_module.addImport("raylib", raylib);
     exe.root_module.addImport("raygui", raygui);
 
+    const target_os = exe.rootModuleTarget().os.tag;
+    switch (target_os) {
+        .windows => {},
+        .linux => {
+            exe.linkSystemLibrary("Xrandr");
+            lib.linkSystemLibrary("Xrandr");
+        },
+        else => {},
+    }
+
+    // This declares intent for the library to be installed into the standard
+    // location when the user invokes the "install" step (the default step when
+    // running `zig build`).
+    b.installArtifact(lib);
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
     // step when running `zig build`).
