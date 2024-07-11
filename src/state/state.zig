@@ -100,58 +100,66 @@ pub const State = struct {
                 assets.cursorTexture.?,
                 mouse_pos,
                 0,
-                0.5,
+                1,
                 value.color,
             );
 
-            drawTextOutline(
-                value.displayName,
-                @intFromFloat(mouse_pos.x + 20),
-                @intFromFloat(mouse_pos.y + 20),
-                24,
-                value.color,
-            );
+            if (assets.robotoFont != null) {
+                drawTextOutline(
+                    assets.robotoFont.?,
+                    value.displayName,
+                    mouse_pos.add(.{ .x = 20, .y = 20 }),
+                    18,
+                    1,
+                    value.color,
+                );
+            }
         }
     }
 
-    fn drawTextOutline(text: [:0]const u8, posX: i32, posY: i32, fontSize: i32, color: rl.Color) void {
-        rl.drawText(
+    fn drawTextOutline(font: rl.Font, text: [:0]const u8, position: rl.Vector2, fontSize: f32, spacing: f32, color: rl.Color) void {
+        rl.drawTextEx(
+            font,
             text,
-            posX - 1,
-            posY,
+            position.add(.{ .x = -1, .y = 0 }),
             fontSize,
+            spacing,
             rl.Color.black,
         );
 
-        rl.drawText(
+        rl.drawTextEx(
+            font,
             text,
-            posX + 1,
-            posY,
+            position.add(.{ .x = 1, .y = 0 }),
             fontSize,
+            spacing,
             rl.Color.black,
         );
 
-        rl.drawText(
+        rl.drawTextEx(
+            font,
             text,
-            posX,
-            posY - 1,
+            position.add(.{ .x = 0, .y = 1 }),
             fontSize,
+            spacing,
             rl.Color.black,
         );
 
-        rl.drawText(
+        rl.drawTextEx(
+            font,
             text,
-            posX,
-            posY + 1,
+            position.add(.{ .x = 0, .y = -1 }),
             fontSize,
+            spacing,
             rl.Color.black,
         );
 
-        rl.drawText(
+        rl.drawTextEx(
+            font,
             text,
-            posX,
-            posY,
+            position,
             fontSize,
+            spacing,
             color,
         );
     }
