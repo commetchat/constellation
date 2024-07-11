@@ -14,7 +14,18 @@ export fn _constellation_start() i32 {
     return 0;
 }
 
-export fn _constellation_set_window(id: c_ulong) void {
+export fn _constellation_set_window(id: [*:0]const u8) void {
+    globals.state.mutex.lock();
+    defer globals.state.mutex.unlock();
+
+    if (globals.state.platform == null) {
+        return;
+    }
+    globals.state.currentDisplay = null;
+    globals.state.currentWindow = globals.state.platform.?.getWindowById(std.mem.span(id));
+}
+
+export fn _constellation_set_display(id: [*:0]const u8) void {
     globals.state.mutex.lock();
     defer globals.state.mutex.unlock();
 
@@ -22,7 +33,10 @@ export fn _constellation_set_window(id: c_ulong) void {
         return;
     }
 
-    globals.state.currentWindow = globals.state.platform.?.getWindowById(id);
+    std.debug.print("Setting current display: {s}\n", .{id});
+
+    globals.state.currentDisplay = globals.state.platform.?.getDisplay(std.mem.span(id));
+    globals.state.currentWindow = null;
 }
 
 export fn _constellation_create_cursor(key: [*:0]const u8, display_name: [*:0]const u8) void {

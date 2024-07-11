@@ -356,8 +356,11 @@ pub const Platform = struct {
         return iterateChildren(@ptrCast(display), win, windowName);
     }
 
-    pub fn getWindowById(self: *Platform, id: c_ulong) ?Window {
-        return Window{ .windowHandle = id, .platform = self };
+    pub fn getWindowById(self: *Platform, id: []const u8) ?Window {
+        const handle = std.fmt.parseInt(c_ulong, id, 10) catch {
+            return null;
+        };
+        return Window{ .windowHandle = handle, .platform = self };
     }
 
     fn iterateChildren(
