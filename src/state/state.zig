@@ -13,6 +13,20 @@ pub const State = struct {
     pub fn process(self: *State, delta: f32) void {
         if (self.platform == null) return;
 
+        self.processCursors(delta);
+        self.processCurrentDesktop();
+        self.updateWindowBounds();
+    }
+
+    fn updateWindowBounds(self: *State) void {
+        const bounds = self.platform.?.getBounds(self);
+        if (bounds != null) {
+            rl.setWindowPosition(@intFromFloat(bounds.?.x), @intFromFloat(bounds.?.y));
+            rl.setWindowSize(@intFromFloat(bounds.?.width), @intFromFloat(bounds.?.height));
+        }
+    }
+
+    fn processCurrentDesktop(self: *State) void {
         const desktop = self.platform.?.getCurrentDesktop();
 
         if (self.platform.?.thisWindow == null) {
@@ -25,17 +39,13 @@ pub const State = struct {
                 self.platform.?.moveWindowToDesktop(self.platform.?.thisWindow.?, desktop.?);
             }
         }
+    }
 
+    fn processCursors(self: *State, delta: f32) void {
         const keys = self.cursors.getKeys() orelse return;
         for (keys) |key| {
             var ptr = self.cursors.getPtr(key) orelse continue;
             ptr.process(delta);
-        }
-
-        const bounds = self.platform.?.getBounds(self);
-        if (bounds != null) {
-            rl.setWindowPosition(@intFromFloat(bounds.?.x), @intFromFloat(bounds.?.y));
-            rl.setWindowSize(@intFromFloat(bounds.?.width), @intFromFloat(bounds.?.height));
         }
     }
 
@@ -64,9 +74,6 @@ pub const State = struct {
                 self.renderCursors(relative_window_pos, size);
             }
         }
-
-        var mousePos = self.platform.?.getMousePosition();
-        mousePos = mousePos.subtract(this_window_pos);
     }
 
     fn renderWindowOutline(relative_window_pos: rl.Vector2, window_size: rl.Vector2) void {
@@ -97,7 +104,7 @@ pub const State = struct {
                 value.color,
             );
 
-            rl.drawText(
+            drawTextOutline(
                 value.displayName,
                 @intFromFloat(mouse_pos.x + 20),
                 @intFromFloat(mouse_pos.y + 20),
@@ -105,5 +112,47 @@ pub const State = struct {
                 value.color,
             );
         }
+    }
+
+    fn drawTextOutline(text: [:0]const u8, posX: i32, posY: i32, fontSize: i32, color: rl.Color) void {
+        rl.drawText(
+            text,
+            posX - 1,
+            posY,
+            fontSize,
+            rl.Color.black,
+        );
+
+        rl.drawText(
+            text,
+            posX + 1,
+            posY,
+            fontSize,
+            rl.Color.black,
+        );
+
+        rl.drawText(
+            text,
+            posX,
+            posY - 1,
+            fontSize,
+            rl.Color.black,
+        );
+
+        rl.drawText(
+            text,
+            posX,
+            posY + 1,
+            fontSize,
+            rl.Color.black,
+        );
+
+        rl.drawText(
+            text,
+            posX,
+            posY,
+            fontSize,
+            color,
+        );
     }
 };
