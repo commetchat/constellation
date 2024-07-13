@@ -10,14 +10,23 @@ pub fn main() anyerror!void {
 
     var rnd = RndGen.init(0);
     while (true) {
+        std.time.sleep(2_00_000_000);
         const x = rnd.random().float(f32);
         const y = rnd.random().float(f32);
 
         globals.state.mutex.lock();
+        if (globals.state.platform == null) {
+            globals.state.mutex.unlock();
+            continue;
+        }
 
         if (globals.state.platform != null) {
-            if (globals.state.currentDisplay == null) {
-                globals.state.currentDisplay = globals.state.platform.?.getDisplay("HDMI-1");
+            // if (globals.state.currentDisplay == null) {
+            //     globals.state.currentDisplay = globals.state.platform.?.getDisplay("HDMI-1");
+            // }
+
+            if (globals.state.currentWindow == null) {
+                globals.state.currentWindow = globals.state.platform.?.findWindowByName("Untitled - Notepad");
             }
         }
 
@@ -43,7 +52,5 @@ pub fn main() anyerror!void {
         }
 
         globals.state.mutex.unlock();
-
-        std.time.sleep(2_00_000_000);
     }
 }

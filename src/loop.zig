@@ -24,7 +24,7 @@ pub fn loop() anyerror!void {
         .window_mouse_passthrough = true,
         .window_undecorated = true,
         .window_topmost = true,
-        .borderless_windowed_mode = true,
+        .borderless_windowed_mode = false,
         .window_maximized = false,
         .window_always_run = true,
         .window_unfocused = true,
@@ -43,14 +43,17 @@ pub fn loop() anyerror!void {
 
     std.debug.print("Loaded assets\n", .{});
 
-    globals.state.mutex.lock();
-    globals.state.platform.?.setAsToolWindow();
-    globals.state.mutex.unlock();
-
     std.debug.print("Set as tool window\n", .{});
 
     rl.setTargetFPS(120);
     std.debug.print("Got window handle: {x}\n", .{rl.getWindowHandle()});
+
+    globals.state.mutex.lock();
+    std.debug.print("Got lock\n", .{});
+    globals.state.platform.?.setAsToolWindow();
+    globals.state.mutex.unlock();
+
+    std.debug.print("Unlocked\n", .{});
 
     while (!rl.windowShouldClose()) {
         rl.beginDrawing();

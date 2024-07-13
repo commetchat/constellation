@@ -16,16 +16,16 @@ pub fn load() void {
 
     // loadFontFromMemory can accept a null pointer and a length of zero to load default character set
     // raylib-zig however cannot pass these parameters, so I create a slice and set the internal pointer to zero
-    const array = [_]i32{};
-    var slice = array[0..0];
-    const ptrPtr = &slice.ptr;
-    const intptr: *c_ulong = @ptrCast(ptrPtr);
-    intptr.* = 0;
+    // const array = [_]i32{};
+    // var slice = array[0..0];
+    // const ptrPtr = &slice.ptr;
+    // const intptr: *c_ulong = @ptrCast(ptrPtr);
+    // intptr.* = 0;
 
-    robotoFont = rl.loadFontFromMemory(
-        ".ttf",
-        roboto,
-        18,
-        slice,
-    );
+    // robotoFont = rl.loadFontFromMemory(
+    //     ".ttf",
+    //     roboto,
+    //     18,
+    //     slice,
+    // );
 }
