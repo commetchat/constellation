@@ -28,7 +28,10 @@ pub const Window = struct {
 
     pub fn getPosition(self: Window) rl.Vector2 {
         var rect = std.mem.zeroes(win.RECT);
-        _ = win.GetWindowRect(self.handle, &rect);
+        _ = win.DwmGetWindowAttribute(self.handle, win.DWMWA_EXTENDED_FRAME_BOUNDS, &rect, @sizeOf(win.RECT));
+
+        // var rect = std.mem.zeroes(win.RECT);
+        // _ = win.GetWindowRect(self.handle, &rect);
 
         return rl.Vector2{
             .x = @floatFromInt(rect.left),
@@ -37,8 +40,10 @@ pub const Window = struct {
     }
 
     pub fn getSize(self: Window) rl.Vector2 {
+        // var rect = std.mem.zeroes(win.RECT);
+        // _ = win.GetWindowRect(self.handle, &rect);
         var rect = std.mem.zeroes(win.RECT);
-        _ = win.GetWindowRect(self.handle, &rect);
+        _ = win.DwmGetWindowAttribute(self.handle, win.DWMWA_EXTENDED_FRAME_BOUNDS, &rect, @sizeOf(win.RECT));
 
         return rl.Vector2{
             .x = @floatFromInt(rect.right - rect.left),
@@ -46,9 +51,16 @@ pub const Window = struct {
         };
     }
 
-    pub fn getDesktop(self: Window) ?Desktop {
-        _ = self;
-        return Desktop{ .index = 0 };
+    pub fn isVisible(self: Window) bool {
+        var vis = win.IsWindowVisible(self.handle) == 1;
+
+        var cloaked: u32 = 0;
+        const result = win.DwmGetWindowAttribute(self.handle, win.DWMWA_CLOAKED, &cloaked, 4);
+        if (result == win.S_OK) {
+            vis = vis and cloaked == 0;
+        }
+
+        return vis;
     }
 };
 

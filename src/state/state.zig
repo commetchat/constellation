@@ -15,7 +15,7 @@ pub const State = struct {
         if (self.platform == null) return;
 
         self.processCursors(delta);
-        self.processCurrentDesktop();
+        // self.processCurrentDesktop();
         self.updateWindowBounds();
     }
 
@@ -27,20 +27,20 @@ pub const State = struct {
         }
     }
 
-    fn processCurrentDesktop(self: *State) void {
-        const desktop = self.platform.?.getCurrentDesktop();
+    // fn processCurrentDesktop(self: *State) void {
+    //     const desktop = self.platform.?.getCurrentDesktop();
 
-        if (self.platform.?.thisWindow == null) {
-            std.debug.print("Could not find reference to our own window!\n", .{});
-        }
+    //     if (self.platform.?.thisWindow == null) {
+    //         std.debug.print("Could not find reference to our own window!\n", .{});
+    //     }
 
-        if (desktop != null and self.platform.?.thisWindow != null) {
-            var overlayDesktop = self.platform.?.thisWindow.?.getDesktop();
-            if (overlayDesktop != null and !overlayDesktop.?.equals(desktop.?)) {
-                self.platform.?.moveWindowToDesktop(self.platform.?.thisWindow.?, desktop.?);
-            }
-        }
-    }
+    //     if (desktop != null and self.platform.?.thisWindow != null) {
+    //         var overlayDesktop = self.platform.?.thisWindow.?.getDesktop();
+    //         if (overlayDesktop != null and !overlayDesktop.?.equals(desktop.?)) {
+    //             self.platform.?.moveWindowToDesktop(self.platform.?.thisWindow.?, desktop.?);
+    //         }
+    //     }
+    // }
 
     fn processCursors(self: *State, delta: f32) void {
         const keys = self.cursors.getKeys() orelse return;
@@ -55,31 +55,23 @@ pub const State = struct {
         const this_window_pos = rl.getWindowPosition();
 
         rl.clearBackground(rl.Color{
-            .a = 0,
+            .a = 50,
             .r = 0,
             .g = 0,
             .b = 0,
         });
 
-        if (self.currentWindow != null) {
-            const win = self.currentWindow.?;
-            const target_window_desktop = win.getDesktop();
-            const current_desktop = self.platform.?.getCurrentDesktop();
+        if (self.currentWindow.?.isVisible()) {
+            var bounds = self.platform.?.getTargetBounds(self) orelse return;
+            const pos = rl.Vector2{ .x = bounds.x, .y = bounds.y };
+            const relative_pos = pos.subtract(this_window_pos);
 
-            if (target_window_desktop == null) return;
-            if (current_desktop == null) return;
-            if (target_window_desktop.?.equals(current_desktop.?) == false) return;
+            bounds.x = relative_pos.x;
+            bounds.y = relative_pos.y;
+
+            renderWindowOutline(bounds);
+            self.renderCursors(bounds);
         }
-
-        var bounds = self.platform.?.getTargetBounds(self) orelse return;
-        const pos = rl.Vector2{ .x = bounds.x, .y = bounds.y };
-        const relative_pos = pos.subtract(this_window_pos);
-
-        bounds.x = relative_pos.x;
-        bounds.y = relative_pos.y;
-
-        renderWindowOutline(bounds);
-        self.renderCursors(bounds);
     }
 
     fn renderWindowOutline(rect: rl.Rectangle) void {

@@ -50,7 +50,10 @@ pub fn build(b: *std.Build) void {
 
     const target_os = exe.rootModuleTarget().os.tag;
     switch (target_os) {
-        .windows => {},
+        .windows => {
+            exe.linkSystemLibrary("dwmapi");
+            lib.linkSystemLibrary("dwmapi");
+        },
         .linux => {
             exe.linkSystemLibrary("Xrandr");
             lib.linkSystemLibrary("Xrandr");
