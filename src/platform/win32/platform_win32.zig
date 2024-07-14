@@ -200,4 +200,8 @@ pub const Platform = struct {
         _ = id;
         return null;
     }
+
+    pub fn ensureOverlayVisible(self: *Platform) void {
+        _ = self;
+    }
 };

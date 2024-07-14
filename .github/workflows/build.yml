@@ -8,23 +8,33 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows-latest]
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v2
-
+      
       - name: Install Dependencies
         if: ${{matrix.os == 'ubuntu-latest'}}
         run: |
           sudo apt-get update -y
           sudo apt-get install -y libx11-dev libxfixes-dev libxcursor-dev libglfw3 libglfw3-dev libxrandr-dev libxinerama-dev libxi-dev libxext-dev libxfixes-dev libwayland-dev libxkbcommon-dev
+      
       - uses: goto-bus-stop/setup-zig@v2
         with:
             version: 0.13.0
+
       - run: zig build
-      - name: Upload Artifact
+
+      - name: Upload Artifact (Linux)
         if: ${{matrix.os == 'ubuntu-latest'}}
         uses: actions/upload-artifact@v3
         with:
           name: libconstellation.so
           path: zig-out/lib/libconstellation.so
+
+      - name: Upload Artifact (Windows)
+        if: ${{matrix.os == 'windows-latest'}}
+        uses: actions/upload-artifact@v3
+        with:
+          name: constellation.dll
+          path: zig-out/bin/constellation.dll
