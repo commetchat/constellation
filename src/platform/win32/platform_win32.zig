@@ -197,7 +197,14 @@ pub const Platform = struct {
 
     pub fn getWindowById(self: *Platform, id: []const u8) ?Window {
         _ = self;
-        _ = id;
+
+        const handle = std.fmt.parseInt(c_ulong, id, 10) catch {
+            return null;
+        };
+
+        if (win.IsWindow(handle) == 1) {
+            return Window{ .handle = handle };
+        }
         return null;
     }
 
