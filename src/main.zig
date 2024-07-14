@@ -26,7 +26,7 @@ pub fn main() anyerror!void {
             // }
 
             if (globals.state.currentWindow == null) {
-                globals.state.currentWindow = globals.state.platform.?.findWindowByName("Untitled - Notepad");
+                globals.state.currentWindow = globals.state.platform.?.findWindowByName("*Untitled Document 1 - gedit");
             }
         }
 

@@ -97,6 +97,13 @@ pub const Window = struct {
         const result = c.XSendEvent(display, self.windowHandle, c.True, c.SubstructureRedirectMask | c.SubstructureNotifyMask, send_event);
         std.debug.print("Send message result: {d}\n", .{result});
     }
+
+    pub fn isVisible(self: Window) bool {
+        const desktop = self.getDesktop() orelse return false;
+        const currentDesktop = self.platform.getCurrentDesktop() orelse return false;
+
+        return desktop.equals(currentDesktop);
+    }
 };
 
 pub const Platform = struct {
@@ -406,5 +413,16 @@ pub const Platform = struct {
         }
 
         return null;
+    }
+
+    pub fn ensureOverlayVisible(self: *Platform) void {
+        if (self.thisWindow == null) return;
+
+        const currentDesktop = self.getCurrentDesktop() orelse return;
+        const overlayCurrentDesktop = self.thisWindow.?.getDesktop() orelse return;
+
+        if (overlayCurrentDesktop.equals(currentDesktop) == false) {
+            self.moveWindowToDesktop(self.thisWindow.?, currentDesktop);
+        }
     }
 };

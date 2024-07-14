@@ -15,8 +15,8 @@ pub const State = struct {
         if (self.platform == null) return;
 
         self.processCursors(delta);
-        // self.processCurrentDesktop();
         self.updateWindowBounds();
+        self.platform.?.ensureOverlayVisible();
     }
 
     fn updateWindowBounds(self: *State) void {
@@ -26,21 +26,6 @@ pub const State = struct {
             rl.setWindowSize(@intFromFloat(bounds.?.width), @intFromFloat(bounds.?.height));
         }
     }
-
-    // fn processCurrentDesktop(self: *State) void {
-    //     const desktop = self.platform.?.getCurrentDesktop();
-
-    //     if (self.platform.?.thisWindow == null) {
-    //         std.debug.print("Could not find reference to our own window!\n", .{});
-    //     }
-
-    //     if (desktop != null and self.platform.?.thisWindow != null) {
-    //         var overlayDesktop = self.platform.?.thisWindow.?.getDesktop();
-    //         if (overlayDesktop != null and !overlayDesktop.?.equals(desktop.?)) {
-    //             self.platform.?.moveWindowToDesktop(self.platform.?.thisWindow.?, desktop.?);
-    //         }
-    //     }
-    // }
 
     fn processCursors(self: *State, delta: f32) void {
         const keys = self.cursors.getKeys() orelse return;
@@ -61,17 +46,23 @@ pub const State = struct {
             .b = 0,
         });
 
-        if (self.currentWindow.?.isVisible()) {
-            var bounds = self.platform.?.getTargetBounds(self) orelse return;
-            const pos = rl.Vector2{ .x = bounds.x, .y = bounds.y };
-            const relative_pos = pos.subtract(this_window_pos);
-
-            bounds.x = relative_pos.x;
-            bounds.y = relative_pos.y;
-
-            renderWindowOutline(bounds);
-            self.renderCursors(bounds);
+        if (self.currentDisplay == null and self.currentWindow == null) {
+            return;
         }
+
+        if (self.currentWindow != null and self.currentWindow.?.isVisible() == false) {
+            return;
+        }
+
+        var bounds = self.platform.?.getTargetBounds(self) orelse return;
+        const pos = rl.Vector2{ .x = bounds.x, .y = bounds.y };
+        const relative_pos = pos.subtract(this_window_pos);
+
+        bounds.x = relative_pos.x;
+        bounds.y = relative_pos.y;
+
+        renderWindowOutline(bounds);
+        self.renderCursors(bounds);
     }
 
     fn renderWindowOutline(rect: rl.Rectangle) void {
