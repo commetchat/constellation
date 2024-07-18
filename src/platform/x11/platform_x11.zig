@@ -229,36 +229,29 @@ pub const Platform = struct {
         return .{ .index = @intCast(desktop) };
     }
 
-    pub fn getDisplay(self: *Platform, name: []const u8) ?Display {
+    pub fn getDisplay(self: *Platform, id: []const u8) ?Display {
+        const id_atom = std.fmt.parseInt(c_ulong, id, 10) catch {
+            return null;
+        };
+
         const display = self.getXDisplay() orelse return null;
         const root = c.XDefaultRootWindow(display);
-        const resources = c.XRRGetScreenResources(display, root);
-        defer c.XRRFreeScreenResources(resources);
 
-        std.debug.print("Screen count: {d}\n", .{resources.*.noutput});
+        var n_monitors: c_int = 0;
+        const monitors = c.XRRGetMonitors(display, root, 0, &n_monitors);
+        defer _ = c.XFree(monitors);
 
-        const numOutputs = resources.*.noutput;
-        for (0..@intCast(numOutputs)) |output_index| {
-            const info = c.XRRGetOutputInfo(display, resources, resources.*.outputs[output_index]);
-            defer c.XRRFreeOutputInfo(info);
-            if (info == 0) continue;
-            const output_name = std.mem.span(info.*.name);
-
-            if (info.*.connection != c.RR_Connected) continue;
-
-            std.debug.print("Got info: {any} {s}\n", .{ info, output_name });
-
-            if (std.mem.eql(u8, output_name, name) == false) continue;
-
-            const crtc_info = c.XRRGetCrtcInfo(display, resources, info.*.crtc);
-            defer c.XRRFreeCrtcInfo(crtc_info);
-
-            return Display{
-                .x = crtc_info.*.x,
-                .y = crtc_info.*.y,
-                .width = crtc_info.*.width,
-                .height = crtc_info.*.height,
-            };
+        for (0..@intCast(n_monitors)) |index| {
+            const m = monitors[index];
+            if (m.name == id_atom) {
+                std.debug.print("Found Correct monitor: {any}\n", .{m.name});
+                return Display{
+                    .x = m.x,
+                    .y = m.y,
+                    .width = @intCast(m.width),
+                    .height = @intCast(m.height),
+                };
+            }
         }
 
         return null;
