@@ -17,10 +17,8 @@ pub const Desktop = struct {
 };
 
 pub const Display = struct {
-    x: c_int,
-    y: c_int,
-    width: c_ulong,
-    height: c_ulong,
+    handle: win.HMONITOR,
+    rect: win.RECT,
 };
 
 pub const Window = struct {
@@ -101,12 +99,18 @@ pub const Platform = struct {
                 .height = size.y,
             };
         }
-        return rl.Rectangle{
-            .x = 100,
-            .y = 100,
-            .width = 500,
-            .height = 500,
-        };
+
+        if (state.currentDisplay != null) {
+            const rect = state.currentDisplay.?.rect;
+            return rl.Rectangle{
+                .x = @floatFromInt(rect.left),
+                .y = @floatFromInt(rect.top),
+                .width = @floatFromInt(rect.right - rect.left),
+                .height = @floatFromInt(rect.bottom - rect.top),
+            };
+        }
+
+        return null;
     }
 
     // gets bounds required for the window we want to draw over
@@ -124,18 +128,61 @@ pub const Platform = struct {
             };
         }
 
-        return rl.Rectangle{
-            .x = 100,
-            .y = 100,
-            .width = 500,
-            .height = 500,
-        };
+        if (state.currentDisplay != null) {
+            const rect = state.currentDisplay.?.rect;
+            return rl.Rectangle{
+                .x = @floatFromInt(rect.left),
+                .y = @floatFromInt(rect.top),
+                .width = @floatFromInt(rect.right - rect.left),
+                .height = @floatFromInt(rect.bottom - rect.top),
+            };
+        }
+
+        return null;
     }
 
-    pub fn getDisplay(self: *Platform, name: []const u8) ?Display {
+    const monitorEnumInfo = struct {
+        index: c_int,
+        display: ?Display,
+    };
+
+    pub fn getDisplay(self: *Platform, id: []const u8) ?Display {
         _ = self;
-        _ = name;
-        return null;
+
+        const index = std.fmt.parseInt(c_int, id, 10) catch {
+            return null;
+        };
+
+        var info = monitorEnumInfo{
+            .index = index,
+            .display = null,
+        };
+
+        const ptr: usize = @intFromPtr(&info);
+        _ = win.EnumDisplayMonitors(null, null, enumMonitorsCallback, @intCast(ptr));
+
+        return info.display;
+    }
+
+    fn enumMonitorsCallback(monitor: win.HMONITOR, hdc: win.HDC, lprcMonitor: win.LPRECT, dwData: win.LPARAM) callconv(.C) win.WINBOOL {
+        _ = hdc;
+        const s: usize = @intCast(dwData);
+        var out: *monitorEnumInfo = @ptrFromInt(s);
+
+        std.debug.print("Enumerating monitors! {any}\n", .{lprcMonitor.*.left});
+        out.index -= 1;
+        if (out.index < 0) {
+            std.debug.print("Found correct monitor!\n", .{});
+            out.display = Display{
+                .handle = monitor,
+                .rect = lprcMonitor.*,
+            };
+            return 0;
+        }
+
+        std.debug.print("This isnt the monitor we are looking for...\n", .{});
+
+        return 1;
     }
 
     pub fn findWindowByName(self: *Platform, windowName: []const u8) ?Window {

@@ -21,13 +21,13 @@ pub fn main() anyerror!void {
         }
 
         if (globals.state.platform != null) {
-            // if (globals.state.currentDisplay == null) {
-            //     globals.state.currentDisplay = globals.state.platform.?.getDisplay("HDMI-1");
-            // }
-
-            if (globals.state.currentWindow == null) {
-                globals.state.currentWindow = globals.state.platform.?.findWindowByName("*Untitled Document 1 - gedit");
+            if (globals.state.currentDisplay == null) {
+                globals.state.currentDisplay = globals.state.platform.?.getDisplay("0");
             }
+
+            // if (globals.state.currentWindow == null) {
+            //     globals.state.currentWindow = globals.state.platform.?.findWindowByName("Untitled - Notepad");
+            // }
         }
 
         const key = @mod(rnd.random().int(i32), 5);
