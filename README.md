@@ -21,7 +21,9 @@ Constellation is developed using Zig, currently version `0.13.0`.
 Rendering and Windowing is done using raylib
 
 # Support
-Currently the only platform supported is Linux / X11. However more platforms are planned to be supported soon.
+- [x] Linux (X11)
+- [ ] Linux (Wayland)
+- [x] Windows
 
 # Usage
 This library is designed specifically for use in Commet, and isn't really designed to be a general purpose library. Constellation only provides the functionality specifically required by Commet.
