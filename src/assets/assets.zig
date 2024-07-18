@@ -8,10 +8,11 @@ pub var cursorTexture: ?rl.Texture2D = null;
 pub var robotoFont: ?rl.Font = null;
 
 pub fn load() void {
+    std.debug.print("Loading assets\n", .{});
     const len: i32 = @intCast(cursorA.len);
     std.debug.print("Loading image from {d} bytes\n", .{len});
     const cursorImage = rl.loadImageFromMemory(".dds", cursorA);
-    std.debug.print("Loaded image: {d} x {d}", .{ cursorImage.width, cursorImage.height });
+    std.debug.print("Loaded image: {d} x {d}\n", .{ cursorImage.width, cursorImage.height });
     cursorTexture = rl.loadTextureFromImage(cursorImage);
 
     // loadFontFromMemory can accept a null pointer and a length of zero to load default character set

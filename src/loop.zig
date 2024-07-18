@@ -45,8 +45,7 @@ pub fn loop() anyerror!void {
 
     std.debug.print("Set as tool window\n", .{});
 
-    rl.setTargetFPS(120);
-    std.debug.print("Got window handle: {x}\n", .{rl.getWindowHandle()});
+    std.debug.print("Set target fps!\n", .{});
 
     globals.state.mutex.lock();
     std.debug.print("Got lock\n", .{});

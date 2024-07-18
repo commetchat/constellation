@@ -132,26 +132,10 @@ pub const Platform = struct {
         };
     }
 
-    pub fn getCurrentDesktop(self: *Platform) ?Desktop {
-        _ = self;
-        return Desktop{ .index = 0 };
-    }
-
     pub fn getDisplay(self: *Platform, name: []const u8) ?Display {
         _ = self;
         _ = name;
         return null;
-    }
-
-    pub fn moveWindowToDesktop(self: *Platform, window: Window, desktop: Desktop) void {
-        _ = self;
-        _ = window;
-        _ = desktop;
-    }
-
-    pub fn getMousePosition(self: *Platform) rl.Vector2 {
-        _ = self;
-        return rl.Vector2{ .x = 0, .y = 0 };
     }
 
     pub fn findWindowByName(self: *Platform, windowName: []const u8) ?Window {
@@ -197,7 +181,18 @@ pub const Platform = struct {
 
     pub fn getWindowById(self: *Platform, id: []const u8) ?Window {
         _ = self;
-        _ = id;
+
+        const handle = std.fmt.parseInt(c_ulong, id, 10) catch {
+            return null;
+        };
+
+        if (win.IsWindow(handle) == 1) {
+            return Window{ .handle = handle };
+        }
         return null;
+    }
+
+    pub fn ensureOverlayVisible(self: *Platform) void {
+        _ = self;
     }
 };
